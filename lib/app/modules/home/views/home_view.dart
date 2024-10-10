@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 
 import 'package:get/get.dart';
 import 'package:tdesign_flutter/tdesign_flutter.dart';
@@ -68,31 +69,69 @@ class HomeView extends GetView<HomeController> {
             //   leftLabelStyle: const TextStyle(color: Colors.blue),
             //   required: true,
             // ),
-            TDButton(
-              text: '打包',
-              size: TDButtonSize.large,
-              type: TDButtonType.fill,
-              theme: TDButtonTheme.primary,
-              isBlock: true,
-              onTap: () => controller.build(),
-            ),
+            Obx(() => TDButton(
+                  text: '打包',
+                  size: TDButtonSize.large,
+                  type: TDButtonType.fill,
+                  theme: TDButtonTheme.primary,
+                  isBlock: true,
+                  onTap: () {
+                    SmartDialog.showLoading();
+                    controller.build(context);
+                    SmartDialog.dismiss();
+                  },
+                  disabled: !controller.enableBuild.value,
+                )),
             const SizedBox(height: 20),
-            // Padding(
-            //   padding: const EdgeInsets.only(left: 16, right: 16),
-            //   child: Row(
-            //     children: [
-            //       Expanded(
-            //         flex: 1,
-            //         child: TDSteps(
-            //           steps: [
-            //             TDStepsItemData(title: '1', content: '2'),
-            //             TDStepsItemData(title: '2', content: '3'),
-            //           ],
-            //         ),
-            //       )
-            //     ],
-            //   ),
-            // )
+            Expanded(
+                child: ListView(
+              children: [
+                Obx(() => TDCollapse(
+                      style: TDCollapseStyle.block,
+                      expansionCallback: (int index, bool isExpanded) {
+                        if (index == 0) {
+                          controller.isExpandBuildList.value = !isExpanded;
+                        } else if (index == 1) {
+                          controller.isExpandQueueList.value = !isExpanded;
+                        }
+                      },
+                      children: [
+                        TDCollapsePanel(
+                          isExpanded: controller.isExpandBuildList.value,
+                          headerBuilder: (context, isExpanded) {
+                            final count = controller.buildNameList.length;
+                            return Text('当前正在构建项目($count)');
+                          },
+                          body: TDCellGroup(
+                              cells: controller.buildNameList
+                                  .map((element) => TDCell(
+                                        title: 'meta_winner_app2',
+                                        style: TDCellStyle(
+                                            backgroundColor:
+                                                Colors.green.shade100),
+                                      ))
+                                  .toList()),
+                        ),
+                        TDCollapsePanel(
+                          isExpanded: controller.isExpandQueueList.value,
+                          headerBuilder: (context, isExpanded) {
+                            final count = controller.queueList.length;
+                            return Text('当前等待构建任务($count)');
+                          },
+                          body: TDCellGroup(
+                              cells: controller.queueList
+                                  .map((element) => TDCell(
+                                        title: '${element.name}(${element.id})',
+                                        style: TDCellStyle(
+                                            backgroundColor:
+                                                Colors.grey.shade100),
+                                      ))
+                                  .toList()),
+                        ),
+                      ],
+                    )),
+              ],
+            ))
           ],
         ),
       ),
