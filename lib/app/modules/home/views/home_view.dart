@@ -1,3 +1,4 @@
+import 'package:darty_json_safe/darty_json_safe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 
@@ -57,18 +58,23 @@ class HomeView extends GetView<HomeController> {
               dividerColor: Colors.blue,
               controller: controller.platformController,
             ),
-            TDInput(
-              controller: controller.flutterBranchController,
-              leftLabel: 'flutter 分支',
-              leftLabelStyle: const TextStyle(color: Colors.blue),
-              required: true,
-            ),
-            // TDInput(
-            //   controller: controller.buildNameController,
-            //   leftLabel: '打包版本',
-            //   leftLabelStyle: const TextStyle(color: Colors.blue),
-            //   required: true,
-            // ),
+            Obx(() {
+              return Column(
+                children: controller.showBuildParameters
+                    .map((element) => element.buildCell(context))
+                    .toList(),
+              );
+            }),
+            TDCellGroup(cells: [
+              TDCell(
+                title: '详细配置',
+                arrow: true,
+                onClick: (cell) {
+                  controller
+                      .toBuildParameterDetail(controller.currentBuildConfig);
+                },
+              )
+            ]),
             Obx(() => TDButton(
                   text: '打包',
                   size: TDButtonSize.large,
@@ -77,7 +83,7 @@ class HomeView extends GetView<HomeController> {
                   isBlock: true,
                   onTap: () {
                     SmartDialog.showLoading();
-                    controller.build(context);
+                    controller.build(controller.currentBuildConfig);
                     SmartDialog.dismiss();
                   },
                   disabled: !controller.enableBuild.value,
@@ -93,6 +99,8 @@ class HomeView extends GetView<HomeController> {
                           controller.isExpandBuildList.value = !isExpanded;
                         } else if (index == 1) {
                           controller.isExpandQueueList.value = !isExpanded;
+                        } else if (index == 2) {
+                          controller.isExpandBuildHistory.value = !isExpanded;
                         }
                       },
                       children: [
@@ -128,6 +136,28 @@ class HomeView extends GetView<HomeController> {
                                       ))
                                   .toList()),
                         ),
+                        TDCollapsePanel(
+                          isExpanded: controller.isExpandBuildHistory.value,
+                          headerBuilder: (context, isExpanded) {
+                            return const Text('历史构建');
+                          },
+                          body: TDCellGroup(
+                              cells: controller.buildHistorys
+                                  .map((element) => TDCell(
+                                        titleWidget: _buildCellTitle(element),
+                                        style: TDCellStyle(
+                                            backgroundColor:
+                                                Colors.grey.shade100),
+                                        arrow: true,
+                                        rightIconWidget:
+                                            _buildCellRight(element),
+                                        descriptionWidget:
+                                            _buildCellDescription(element),
+                                        onClick: (cell) => controller
+                                            .openHistoryBuildDetail(element),
+                                      ))
+                                  .toList()),
+                        )
                       ],
                     )),
               ],
@@ -135,6 +165,71 @@ class HomeView extends GetView<HomeController> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCellTitle(BuildHistoryData element) {
+    bool building = JSON(element.data)['building'].boolValue;
+    final result = JSON(element.data)['result'].stringValue;
+    late Widget icon;
+    if (result == 'SUCCESS') {
+      icon = const Icon(
+        Icons.check_circle,
+        color: Colors.green,
+      );
+    } else if (result == "FAILURE") {
+      icon = const Icon(
+        Icons.highlight_off,
+        color: Colors.red,
+      );
+    } else if (result == "ABORTED") {
+      icon = const Icon(
+        Icons.do_not_disturb,
+        color: Colors.grey,
+      );
+    } else if (building) {
+      icon = const Icon(
+        Icons.radio_button_unchecked,
+        color: Colors.blue,
+      );
+    } else {
+      icon = Container();
+    }
+    return Row(
+      children: [
+        icon,
+        Text(element.id.toString()),
+        if (building) const Text('(打包中....)')
+      ],
+    );
+  }
+
+  Widget _buildCellRight(BuildHistoryData element) {
+    final result = JSON(element.data)['timestamp'].intValue;
+    return Text(DateTime.fromMillisecondsSinceEpoch(result).toIso8601String());
+  }
+
+  Widget _buildCellDescription(BuildHistoryData element) {
+    final config = controller.getBuildConfig(element);
+    final displayNames = [
+      "PLATFROM",
+      "BUILD_NAME",
+      "BRANCH",
+      "UNITY_BRANCH_NAME",
+      "IS_STORE",
+      "androidChannel",
+      "BUILD_NUMBER"
+    ];
+    return Row(
+      children: displayNames.map((e) {
+        final value = config[e];
+        return TDTag(
+          "$e:$value",
+          theme: TDTagTheme.primary,
+          isOutline: true,
+          shape: TDTagShape.round,
+        );
+      }).toList(),
     );
   }
 }
