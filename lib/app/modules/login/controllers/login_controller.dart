@@ -25,7 +25,7 @@ class LoginController extends GetxController {
     super.onInit();
 
     serverHostController.text = AppStorage.host.read() ?? '';
-    serverPortController.text = AppStorage.port.read() ?? '';
+    // serverPortController.text = AppStorage.port.read() ?? '';
 
     usernameController.text = AppStorage.username.read() ?? '';
     passwordController.text = AppStorage.password.read() ?? '';
@@ -44,20 +44,18 @@ class LoginController extends GetxController {
     if (serverHost.isEmpty ||
         serverPort.isEmpty ||
         username.isEmpty ||
-        password.isEmpty ||
-        version.isEmpty) {
+        password.isEmpty) {
       TDToast.showFail('请输入完整信息', context: context);
       return;
     }
 
     await Future.wait([
-      AppStorage.host.write(serverHostController.text),
-      AppStorage.port.write(serverPortController.text),
-      AppStorage.username.write(usernameController.text),
-      AppStorage.password.write(passwordController.text),
-      AppStorage.version.write(buildVersionController.text),
+      AppStorage.host.write(serverHost),
+      AppStorage.username.write(username),
+      AppStorage.password.write(password),
+      AppStorage.version.write(version),
     ]);
 
-    Get.offNamed(Routes.HOME);
+    Get.toNamed(Routes.HOME);
   }
 }

@@ -2,7 +2,6 @@ import 'package:get_storage/get_storage.dart';
 
 enum AppStorage {
   host('host'),
-  port('port'),
   username('username'),
   password('password'),
   version('version');

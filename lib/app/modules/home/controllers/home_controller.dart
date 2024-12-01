@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:build_winner_app_desktop/app/common/app_storage.dart';
 import 'package:build_winner_app_desktop/app/modules/build_parameter_detail/controllers/build_parameter_detail_controller.dart';
 import 'package:build_winner_app_desktop/app/routes/app_pages.dart';
@@ -31,7 +30,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   final enableBuild = true.obs;
 
   String get host => AppStorage.host.read() ?? '';
-  String get port => AppStorage.port.read() ?? '';
+  // String get port => AppStorage.port.read() ?? '';
 
   /// 当前是否展开[构建项目列表]
   final isExpandBuildList = false.obs;
@@ -89,9 +88,9 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
     init();
 
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      await _loadData();
-    });
+    // _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+    //   await _loadData();
+    // });
   }
 
   @override
@@ -147,6 +146,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       }
     }).toList();
 
+    if (showLoadiong) SmartDialog.dismiss();
+
     showBuildParameters.value = _allBuildParameters
         .map((element) => ["BRANCH", "UNITY_BRANCH_NAME"].contains(element.name)
             ? element
@@ -180,8 +181,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     }
 
     buildHistorys.value = historys;
-
-    if (showLoadiong) SmartDialog.dismiss();
   }
 
   _loadData() async {
@@ -286,13 +285,12 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     final username = GetStorage().read('username');
     final password = GetStorage().read('password');
     String host = AppStorage.host.read() ?? '';
-    String port = AppStorage.port.read() ?? '';
-    return 'http://$username:$password@$host:$port/job/$jobName/buildWithParameters';
+    return 'http://$username:$password@$host/job/$jobName/buildWithParameters';
   }
 
   /// 获取最新的任务ID
   Future<String?> getLatestBuildId(String jobName) async {
-    final url = 'http://$host:$port/job/$jobName/lastBuild/buildNumber';
+    final url = 'http://$host/job/$jobName/lastBuild/buildNumber';
     try {
       final response = await Dio().get(url);
       return response.data;
@@ -304,7 +302,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   /// 获取当前任务详情
   Future<String?> getBuildDetail(String jobName, String buildId) async {
-    final url = 'http://$host:$port/job/$jobName/$buildId/api/json?pretty=true';
+    final url = 'http://$host/job/$jobName/$buildId/api/json?pretty=true';
     try {
       final response = await Dio().get(url);
       return JSON(response.data).string;
@@ -316,7 +314,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   /// 查询当前队列任务状态
   Future<dynamic> getQueue() async {
-    final url = 'http://$host:$port/queue/api/json';
+    final url = 'http://$host/queue/api/json';
     try {
       final response = await Dio().get(url);
       return response.data;
@@ -327,7 +325,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   /// 查询当前Jenkins项目状态
   Future<dynamic> getProjects() async {
-    final url = 'http://$host:$port/api/json';
+    final url = 'http://$host/api/json';
     try {
       final response = await Dio().get(url);
       return response.data;
@@ -338,7 +336,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   /// 获取当前打包工程的配置
   Future<dynamic> getJobConfig(String jobName) async {
-    final url = 'http://$host:$port/job/$jobName/api/json?pretty=true';
+    final url = 'http://$host/job/$jobName/api/json?pretty=true';
     try {
       final response = await Dio().get(url);
       return response.data;
@@ -362,12 +360,15 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     );
     for (var i = 0; i < parameters.length; i++) {
       final parameter = parameters[i];
-      final value = config[parameter.name];
+      var value = config[parameter.name];
+      if (parameter.name == 'BUILD_NAME') {
+        value = AppStorage.version.read() ?? value;
+      }
       if (value != null) {
         parameter.updateDefaultValue(value);
       }
     }
-    final result = await Get.toNamed(
+    final result = await Get.offAllNamed(
       Routes.BUILD_PARAMETER_DETAIL,
       arguments: parameters,
     );

@@ -81,9 +81,9 @@ class HomeView extends GetView<HomeController> {
                   type: TDButtonType.fill,
                   theme: TDButtonTheme.primary,
                   isBlock: true,
-                  onTap: () {
+                  onTap: () async {
                     SmartDialog.showLoading();
-                    controller.build(controller.currentBuildConfig);
+                    await controller.build(controller.currentBuildConfig);
                     SmartDialog.dismiss();
                   },
                   disabled: !controller.enableBuild.value,

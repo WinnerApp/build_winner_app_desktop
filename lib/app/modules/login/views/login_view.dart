@@ -31,13 +31,13 @@ class LoginView extends GetView<LoginController> {
                                   leftLabel: '服务器地址',
                                 ),
                               ),
-                              Expanded(
-                                flex: 1,
-                                child: TDInput(
-                                  controller: controller.serverPortController,
-                                  leftLabel: '服务器端口',
-                                ),
-                              ),
+                              // Expanded(
+                              //   flex: 1,
+                              //   child: TDInput(
+                              //     controller: controller.serverPortController,
+                              //     leftLabel: '服务器端口',
+                              //   ),
+                              // ),
                             ],
                           ),
                           TDInput(
