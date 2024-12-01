@@ -36,15 +36,11 @@ class LoginController extends GetxController {
   /// 进行登录
   Future<void> login(BuildContext context) async {
     final serverHost = serverHostController.text;
-    final serverPort = serverPortController.text;
     final username = usernameController.text;
     final password = passwordController.text;
     final version = buildVersionController.text;
 
-    if (serverHost.isEmpty ||
-        serverPort.isEmpty ||
-        username.isEmpty ||
-        password.isEmpty) {
+    if (serverHost.isEmpty || username.isEmpty || password.isEmpty) {
       TDToast.showFail('请输入完整信息', context: context);
       return;
     }
