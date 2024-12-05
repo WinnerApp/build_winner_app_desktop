@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:build_winner_app_desktop/app/common/app_storage.dart';
 import 'package:build_winner_app_desktop/app/modules/build_parameter_detail/controllers/build_parameter_detail_controller.dart';
 import 'package:build_winner_app_desktop/app/routes/app_pages.dart';
+import 'package:build_winner_app_desktop/common/define.dart';
 import 'package:darty_json_safe/darty_json_safe.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -60,6 +61,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   /// 当前打包历史
   final buildHistorys = <BuildHistoryData>[].obs;
+
+  final isLoadHistory = true.obs;
 
   /// 当前打包的配置
   Map<String, String> get currentBuildConfig {
@@ -175,12 +178,19 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         .map((e) => JSON(e)['number'].intValue)
         .toList();
     final historys = <BuildHistoryData>[];
-    for (var element in buildIds) {
-      final data = await getBuildDetail('meta_winner_app2', element.toString());
-      historys.add(BuildHistoryData(id: element, data: data ?? ''));
+    for (var element in buildIds.sublist(0, 15)) {
+      try {
+        final data =
+            await getBuildDetail('meta_winner_app2', element.toString());
+        historys.add(BuildHistoryData(id: element, data: data ?? ''));
+      } catch (e, s) {
+        logger.e(e.toString(), error: e, stackTrace: s);
+      }
     }
 
     buildHistorys.value = historys;
+    isLoadHistory.value = false;
+    update();
   }
 
   _loadData() async {
@@ -202,6 +212,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         })
         .map((e) => JSON(e)['name'].stringValue)
         .toList();
+    update();
   }
 
   /// 检测当前是否还有进行中的任务
@@ -275,9 +286,10 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       String jobName, Map<String, dynamic> data) async {
     final url = await getBuildWithParametersUrl(jobName);
     try {
-      await Dio().post(url, queryParameters: data);
-    } catch (e) {
-      SmartDialog.showNotify(msg: e.toString(), notifyType: NotifyType.error);
+      await dio.post(url, queryParameters: data);
+    } catch (e, s) {
+      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
+      logger.e(e.toString(), error: e, stackTrace: s);
     }
   }
 
@@ -292,10 +304,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   Future<String?> getLatestBuildId(String jobName) async {
     final url = 'http://$host/job/$jobName/lastBuild/buildNumber';
     try {
-      final response = await Dio().get(url);
+      final response = await dio.get(url);
       return response.data;
-    } catch (e) {
-      SmartDialog.showNotify(msg: e.toString(), notifyType: NotifyType.error);
+    } catch (e, s) {
+      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
+      logger.e(e.toString(), error: e, stackTrace: s);
       return null;
     }
   }
@@ -304,10 +317,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   Future<String?> getBuildDetail(String jobName, String buildId) async {
     final url = 'http://$host/job/$jobName/$buildId/api/json?pretty=true';
     try {
-      final response = await Dio().get(url);
+      final response = await dio.get(url);
       return JSON(response.data).string;
-    } catch (e) {
-      SmartDialog.showNotify(msg: e.toString(), notifyType: NotifyType.error);
+    } catch (e, s) {
+      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
+      logger.e(e.toString(), error: e, stackTrace: s);
       return null;
     }
   }
@@ -316,9 +330,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   Future<dynamic> getQueue() async {
     final url = 'http://$host/queue/api/json';
     try {
-      final response = await Dio().get(url);
+      final response = await dio.get(url);
       return response.data;
-    } catch (e) {
+    } catch (e, s) {
+      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
+      logger.e(e.toString(), error: e, stackTrace: s);
       return null;
     }
   }
@@ -327,9 +343,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   Future<dynamic> getProjects() async {
     final url = 'http://$host/api/json';
     try {
-      final response = await Dio().get(url);
+      final response = await dio.get(url);
       return response.data;
-    } catch (e) {
+    } catch (e, s) {
+      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
+      logger.e(e.toString(), error: e, stackTrace: s);
       return null;
     }
   }
@@ -338,10 +356,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   Future<dynamic> getJobConfig(String jobName) async {
     final url = 'http://$host/job/$jobName/api/json?pretty=true';
     try {
-      final response = await Dio().get(url);
+      final response = await dio.get(url);
       return response.data;
-    } catch (e) {
-      SmartDialog.showNotify(msg: e.toString(), notifyType: NotifyType.error);
+    } catch (e, s) {
+      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
+      logger.e(e.toString(), error: e, stackTrace: s);
       return null;
     }
   }
@@ -368,7 +387,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         parameter.updateDefaultValue(value);
       }
     }
-    final result = await Get.offAllNamed(
+    final result = await Get.toNamed(
       Routes.BUILD_PARAMETER_DETAIL,
       arguments: parameters,
     );

@@ -92,74 +92,83 @@ class HomeView extends GetView<HomeController> {
             Expanded(
                 child: ListView(
               children: [
-                Obx(() => TDCollapse(
-                      style: TDCollapseStyle.block,
-                      expansionCallback: (int index, bool isExpanded) {
-                        if (index == 0) {
-                          controller.isExpandBuildList.value = !isExpanded;
-                        } else if (index == 1) {
-                          controller.isExpandQueueList.value = !isExpanded;
-                        } else if (index == 2) {
-                          controller.isExpandBuildHistory.value = !isExpanded;
-                        }
-                      },
-                      children: [
-                        TDCollapsePanel(
-                          isExpanded: controller.isExpandBuildList.value,
-                          headerBuilder: (context, isExpanded) {
-                            final count = controller.buildNameList.length;
-                            return Text('当前正在构建项目($count)');
-                          },
-                          body: TDCellGroup(
-                              cells: controller.buildNameList
-                                  .map((element) => TDCell(
-                                        title: 'meta_winner_app2',
-                                        style: TDCellStyle(
-                                            backgroundColor:
-                                                Colors.green.shade100),
-                                      ))
-                                  .toList()),
-                        ),
-                        TDCollapsePanel(
-                          isExpanded: controller.isExpandQueueList.value,
-                          headerBuilder: (context, isExpanded) {
-                            final count = controller.queueList.length;
-                            return Text('当前等待构建任务($count)');
-                          },
-                          body: TDCellGroup(
-                              cells: controller.queueList
-                                  .map((element) => TDCell(
-                                        title: '${element.name}(${element.id})',
-                                        style: TDCellStyle(
-                                            backgroundColor:
-                                                Colors.grey.shade100),
-                                      ))
-                                  .toList()),
-                        ),
-                        TDCollapsePanel(
-                          isExpanded: controller.isExpandBuildHistory.value,
-                          headerBuilder: (context, isExpanded) {
-                            return const Text('历史构建');
-                          },
-                          body: TDCellGroup(
-                              cells: controller.buildHistorys
-                                  .map((element) => TDCell(
-                                        titleWidget: _buildCellTitle(element),
-                                        style: TDCellStyle(
-                                            backgroundColor:
-                                                Colors.grey.shade100),
-                                        arrow: true,
-                                        rightIconWidget:
-                                            _buildCellRight(element),
-                                        descriptionWidget:
-                                            _buildCellDescription(element),
-                                        onClick: (cell) => controller
-                                            .openHistoryBuildDetail(element),
-                                      ))
-                                  .toList()),
-                        )
-                      ],
-                    )),
+                GetBuilder<HomeController>(builder: (controller) {
+                  return TDCollapse(
+                    style: TDCollapseStyle.block,
+                    expansionCallback: (int index, bool isExpanded) {
+                      if (index == 0) {
+                        controller.isExpandBuildList.value = !isExpanded;
+                      } else if (index == 1) {
+                        controller.isExpandQueueList.value = !isExpanded;
+                      } else if (index == 2) {
+                        controller.isExpandBuildHistory.value = !isExpanded;
+                      }
+                      controller.update();
+                    },
+                    children: [
+                      TDCollapsePanel(
+                        isExpanded: controller.isExpandBuildList.value,
+                        headerBuilder: (context, isExpanded) {
+                          final count = controller.buildNameList.length;
+                          return Text('当前正在构建项目($count)');
+                        },
+                        body: TDCellGroup(
+                            cells: controller.buildNameList
+                                .map((element) => TDCell(
+                                      title: 'meta_winner_app2',
+                                      style: TDCellStyle(
+                                          backgroundColor:
+                                              Colors.green.shade100),
+                                    ))
+                                .toList()),
+                      ),
+                      TDCollapsePanel(
+                        isExpanded: controller.isExpandQueueList.value,
+                        headerBuilder: (context, isExpanded) {
+                          final count = controller.queueList.length;
+                          return Text('当前等待构建任务($count)');
+                        },
+                        body: TDCellGroup(
+                            cells: controller.queueList
+                                .map((element) => TDCell(
+                                      title: '${element.name}(${element.id})',
+                                      style: TDCellStyle(
+                                          backgroundColor:
+                                              Colors.grey.shade100),
+                                    ))
+                                .toList()),
+                      ),
+                      TDCollapsePanel(
+                        isExpanded: controller.isExpandBuildHistory.value,
+                        headerBuilder: (context, isExpanded) {
+                          return Row(
+                            children: [
+                              const Text('历史构建'),
+                              if (controller.isLoadHistory.value)
+                                const TDCircleIndicator(),
+                            ],
+                          );
+                        },
+                        body: TDCellGroup(
+                            cells: controller.buildHistorys
+                                .map(
+                                  (element) => TDCell(
+                                    titleWidget: _buildCellTitle(element),
+                                    style: TDCellStyle(
+                                        backgroundColor: Colors.grey.shade100),
+                                    arrow: true,
+                                    rightIconWidget: _buildCellRight(element),
+                                    descriptionWidget:
+                                        _buildCellDescription(element),
+                                    onClick: (cell) => controller
+                                        .openHistoryBuildDetail(element),
+                                  ),
+                                )
+                                .toList()),
+                      )
+                    ],
+                  );
+                }),
               ],
             ))
           ],
