@@ -69,11 +69,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     var config = isRelease.value ? _releaseConfig : _debugConfig;
     config['PLATFROM'] = platformController.index == 0 ? 'ios' : 'android';
     config['BUILD_NUMBER'] = buildNumber;
-    String upload = 'true';
-    if (platformController.index == 1 && isRelease.value) {
-      upload = 'false';
-    }
-    config['UPLOAD'] = upload;
     for (var element in showBuildParameters) {
       config[element.name] = element.buildValue;
     }
