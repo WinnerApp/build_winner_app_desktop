@@ -232,12 +232,12 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       buildConfig[element.name] = config[element.name];
     }
 
-    if (upload == "true") {
-      /// 合并代码到release2.0
-      await buildWithParameters('merge_release', {
-        'BRANCH': branch,
-      });
-    }
+    // if (upload == "true") {
+    //   /// 合并代码到release2.0
+    //   await buildWithParameters('merge_release', {
+    //     'BRANCH': branch,
+    //   });
+    // }
 
     Future<void> buildApp({
       String channel = 'Winner',
