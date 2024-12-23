@@ -72,6 +72,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     for (var element in showBuildParameters) {
       config[element.name] = element.buildValue;
     }
+    final buildName = config['BUILD_NAME'] ?? '';
+    config['BUILD_NAME'] = AppStorage.version.read<String>() ?? buildName;
     return config;
   }
 
@@ -85,10 +87,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     platformController = TabController(length: 2, vsync: this);
 
     init();
-
-    // _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-    //   await _loadData();
-    // });
   }
 
   @override
@@ -219,8 +217,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   /// 执行打包
   Future<void> build(Map<String, String> config) async {
-    var upload = config["UPLOAD"]!;
-    var branch = config["BRANCH"]!;
     var androidChannel = config["androidChannel"]!;
     var allowOtherChannel = config["ALLOW_OTHER_CHANNEL"] ?? 'true';
     var skipUnity = config["SKIP_UNITY_UPDATE"]!;
