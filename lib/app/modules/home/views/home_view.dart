@@ -83,8 +83,13 @@ class HomeView extends GetView<HomeController> {
                   isBlock: true,
                   onTap: () async {
                     SmartDialog.showLoading();
-                    await controller.build(controller.currentBuildConfig);
-                    SmartDialog.dismiss();
+                    controller.build(controller.currentBuildConfig).then((e) {
+                      SmartDialog.dismiss();
+                    }).catchError((e) {
+                      SmartDialog.dismiss();
+                      SmartDialog.showToast(e.toString(),
+                          displayTime: 3.seconds);
+                    });
                   },
                   disabled: !controller.enableBuild.value,
                 )),

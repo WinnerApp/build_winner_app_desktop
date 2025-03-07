@@ -1,5 +1,5 @@
 name: build_winner_app_desktop
-version: 0.1.3
+version: 0.1.4
 publish_to: none
 description: 执行打包的桌面版本
 environment:

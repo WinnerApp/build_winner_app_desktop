@@ -23,4 +23,8 @@ Future<void> main() async {
       builder: FlutterSmartDialog.init(),
     ),
   );
+
+  FlutterError.onError = (e) {
+    SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
+  };
 }

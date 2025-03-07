@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:build_winner_app_desktop/app/common/app_storage.dart';
 import 'package:build_winner_app_desktop/app/modules/build_parameter_detail/controllers/build_parameter_detail_controller.dart';
 import 'package:build_winner_app_desktop/app/routes/app_pages.dart';
@@ -98,7 +99,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   /// 初始化当前任务状态
   Future<void> init([bool showLoadiong = true]) async {
     if (showLoadiong) SmartDialog.showLoading();
-    await _loadData();
+    _loadData();
     final config = await getJobConfig('meta_winner_app2');
     _allBuildParameters =
         JSON(config)['property'][0]['parameterDefinitions'].listValue.map((e) {
@@ -219,7 +220,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   Future<void> build(Map<String, String> config) async {
     var androidChannel = config["androidChannel"]!;
     var allowOtherChannel = config["ALLOW_OTHER_CHANNEL"] ?? 'true';
-    var skipUnity = config["SKIP_UNITY_UPDATE"]!;
     var platfrom = config["PLATFROM"]!;
     var isStore = config["IS_STORE"]!;
 
@@ -235,17 +235,17 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     //   });
     // }
 
-    Future<void> buildApp({
-      String channel = 'Winner',
-      String skipUnity = 'false',
-    }) async {
+    Future<void> buildApp(
+        {String channel = 'Winner', String skipUnity = 'false'}) async {
       var config = {...buildConfig};
       config['androidChannel'] = channel;
-      config['SKIP_UNITY_UPDATE'] = skipUnity;
+      if (config.keys.contains('skipUnity')) {
+        config['skipUnity'] = skipUnity;
+      }
       await _buildApp(config);
     }
 
-    await buildApp(channel: androidChannel, skipUnity: skipUnity);
+    await buildApp(channel: androidChannel);
 
     if (allowOtherChannel == "true" &&
         isStore == 'true' &&
@@ -275,20 +275,29 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> buildWithParameters(
       String jobName, Map<String, dynamic> data) async {
+    String host = AppStorage.host.read() ?? '';
     final url = await getBuildWithParametersUrl(jobName);
-    try {
-      await dio.post(url, queryParameters: data);
-    } catch (e, s) {
-      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
-      logger.e(e.toString(), error: e, stackTrace: s);
+    final username = GetStorage().read('username');
+    final password = GetStorage().read('password');
+    final crumb = await getCrumb(host, username, password);
+    final authHeader =
+        'Basic ${base64.encode(utf8.encode('$username:$password'))}';
+    dio.options.headers['Authorization'] = authHeader;
+    if (crumb != null) {
+      final parts = crumb.split(':');
+      dio.options.headers[parts[0]] = parts[1];
+    }
+    final response = await dio.post(url, queryParameters: data);
+    if (response.statusCode == 201) {
+      SmartDialog.showToast('任务启动成功');
+    } else {
+      throw Exception(response.data.toString());
     }
   }
 
   Future<String> getBuildWithParametersUrl(String jobName) async {
-    final username = GetStorage().read('username');
-    final password = GetStorage().read('password');
     String host = AppStorage.host.read() ?? '';
-    return 'http://$username:$password@$host/job/$jobName/buildWithParameters';
+    return 'http://$host/job/$jobName/buildWithParameters';
   }
 
   /// 获取最新的任务ID
@@ -320,27 +329,15 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   /// 查询当前队列任务状态
   Future<dynamic> getQueue() async {
     final url = 'http://$host/queue/api/json';
-    try {
-      final response = await dio.get(url);
-      return response.data;
-    } catch (e, s) {
-      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
-      logger.e(e.toString(), error: e, stackTrace: s);
-      return null;
-    }
+    final response = await dio.get(url);
+    return response.data;
   }
 
   /// 查询当前Jenkins项目状态
   Future<dynamic> getProjects() async {
     final url = 'http://$host/api/json';
-    try {
-      final response = await dio.get(url);
-      return response.data;
-    } catch (e, s) {
-      SmartDialog.showToast(e.toString(), displayTime: 3.seconds);
-      logger.e(e.toString(), error: e, stackTrace: s);
-      return null;
-    }
+    final response = await dio.get(url);
+    return response.data;
   }
 
   /// 获取当前打包工程的配置
@@ -401,6 +398,25 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
           JSON(element)['value'].stringValue;
     }
     return config;
+  }
+
+  // 获取 CSRF 令牌
+  Future<String?> getCrumb(
+    String jenkinsUrl,
+    String username,
+    String password,
+  ) async {
+    final dio = Dio();
+    final authHeader =
+        'Basic ${base64.encode(utf8.encode('$username:$password'))}';
+    dio.options.headers['Authorization'] = authHeader;
+    final response = await dio.get('http://$jenkinsUrl/crumbIssuer/api/json');
+    if (response.statusCode == 200) {
+      final jsonData = response.data;
+      return '${jsonData['crumbRequestField']}:${jsonData['crumb']}';
+    } else {
+      throw Exception('获取 CSRF 令牌失败');
+    }
   }
 }
 
